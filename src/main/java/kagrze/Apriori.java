@@ -27,37 +27,14 @@ public class Apriori {
 
 		List<List<E>> candidatesForFrequentKItemsets = aprioriGen(frequentItemsets);
 
-		for(int size=2; candidatesForFrequentKItemsets.size() > 0; size++) {		
-			List<List<E>> frequentKItemsets = getFrequentKItemsets(
-					transactions, support, candidatesForFrequentKItemsets, size);
+		for(int size=2; candidatesForFrequentKItemsets.size() > 0; size++) {
+			Multiset<List<E>> allKItemsets = getAllKItemsets(transactions, candidatesForFrequentKItemsets, size);
+			List<List<E>> frequentKItemsets = getFrequentKItemsets(allKItemsets, support);
 			frequentItemsets.addAll(frequentKItemsets);
 			candidatesForFrequentKItemsets = aprioriGen(frequentKItemsets);
 		}
 		
 		return frequentItemsets;
-	}
-
-	private <E extends Comparable> List<List<E>> getFrequentKItemsets(
-			List<List<E>> transactions, int support, List<List<E>> candidatesForFrequentKItemsets, int size) {
-		Multiset<List<E>> allKItemsets = HashMultiset.create();
-		for (List<E> transaction : transactions) {
-			List<List<E>> combinations = generateAllCombinationsWithoutRepetitions(transaction, size);
-			for (List<E> candidateForFrequentKItemset : candidatesForFrequentKItemsets) {
-				for (List<E> combination : combinations) {
-					if (combination.equals(candidateForFrequentKItemset)) {
-						allKItemsets.add(candidateForFrequentKItemset);
-						break;
-					}
-				}
-			}
-		}
-		List<List<E>> frequentKItemsets = new ArrayList<>();
-		for (List<E> itemset : allKItemsets.elementSet()) {
-			int count = allKItemsets.count(itemset);
-			if (count >= support)
-				frequentKItemsets.add(itemset);
-		}
-		return frequentKItemsets;
 	}
 
 	private <E extends Comparable> List<List<E>> genFrequent1Itemsets(List<List<E>> transactions, int support) {
@@ -77,6 +54,33 @@ public class Apriori {
 		return frequent1Itemsets;
 	}
 
+	private <E> Multiset<List<E>> getAllKItemsets(
+			List<List<E>> transactions, List<List<E>> candidatesForFrequentKItemsets, int size) {
+		Multiset<List<E>> allKItemsets = HashMultiset.create();
+		for (List<E> transaction : transactions) {
+			List<List<E>> combinations = generateAllCombinationsWithoutRepetitions(transaction, size);
+			for (List<E> candidateForFrequentKItemset : candidatesForFrequentKItemsets) {
+				for (List<E> combination : combinations) {
+					if (combination.equals(candidateForFrequentKItemset)) {
+						allKItemsets.add(candidateForFrequentKItemset);
+						break;
+					}
+				}
+			}
+		}
+		return allKItemsets;
+	}
+
+	private <E> List<List<E>> getFrequentKItemsets( Multiset<List<E>> allKItemsets, int support) {
+		List<List<E>> frequentKItemsets = new ArrayList<>();
+		for (List<E> itemset : allKItemsets.elementSet()) {
+			int count = allKItemsets.count(itemset);
+			if (count >= support)
+				frequentKItemsets.add(itemset);
+		}
+		return frequentKItemsets;
+	}
+	
 	/**
 	 * This function contains two steps: join step and prune step
 	 * @param frequent1Itemsets
@@ -93,7 +97,7 @@ public class Apriori {
 					List<E> candidate = new ArrayList<>(lhs);
 					//join
 					candidate.add(rhs.get(rhs.size()-1));
-					//prune
+					//prune (based on the Apriori property)
 					if(!hasInfrequentSubset(candidate,frequentItemsets))
 						candidates.add(candidate);
 				}
@@ -118,7 +122,8 @@ public class Apriori {
 		return combinations;
 	}
 	
-	private <E> void combinationsRecurrent(List<E> itemset, int subsetSize, int level, int index, List<E> combinationPart, List<List<E>> combinations) {
+	private <E> void combinationsRecurrent(List<E> itemset, int subsetSize, int level, int index, 
+			List<E> combinationPart, List<List<E>> combinations) {
 		if (level == subsetSize) {
 			combinations.add(combinationPart);
 		} else {

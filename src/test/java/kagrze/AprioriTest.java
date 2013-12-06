@@ -49,6 +49,25 @@ public class AprioriTest {
 	}
 	
 	@Test
+	public void testMineFrequentItemSets3() {
+		List<List<String>> database = new ArrayList<>();
+		database.add(createItemset("A","B","C","D","E"));
+		database.add(createItemset("B","C","D","E","F"));
+		database.add(createItemset("C","D","E","F","G"));
+		Iterable<List<String>> frequentItemsets = new Apriori().mineFrequentItemSets(database, 3);
+		
+		List<List<String>> expectedItemsets = new ArrayList<>();
+		expectedItemsets.add(createItemset("C"));
+		expectedItemsets.add(createItemset("D"));
+		expectedItemsets.add(createItemset("E"));
+		expectedItemsets.add(createItemset("C","D"));
+		expectedItemsets.add(createItemset("C","E"));
+		expectedItemsets.add(createItemset("D","E"));
+		expectedItemsets.add(createItemset("C","D","E"));
+		assertEquals(expectedItemsets, frequentItemsets);
+	}
+	
+	@Test
 	public void testJoin() {
 		List<List<String>> frequent1Itemsets = new ArrayList<>();
 		frequent1Itemsets.add(createItemset("A"));
