@@ -8,6 +8,9 @@ import static org.junit.Assert.*;
 
 import org.junit.Test;
 
+import com.google.common.collect.LinkedHashMultiset;
+import com.google.common.collect.Multiset;
+
 /**
  * 
  * @author Karol Grzegorczyk
@@ -21,12 +24,12 @@ public class AprioriTest {
 		database.add(createItemset("A","C"));
 		database.add(createItemset("A","B","C","D"));
 		database.add(createItemset("A","C","D"));
-		Iterable<List<String>> frequentItemsets = new Apriori().mineFrequentItemSets(database, 3);
+		Multiset<List<String>> frequentItemsets = new Apriori().mineFrequentItemSets(database, 3);
 		
-		List<List<String>> expectedItemsets = new ArrayList<>();
-		expectedItemsets.add(createItemset("A"));
-		expectedItemsets.add(createItemset("C"));
-		expectedItemsets.add(createItemset("A","C"));
+		Multiset<List<String>> expectedItemsets = LinkedHashMultiset.create();
+		expectedItemsets.add(createItemset("A"),3);
+		expectedItemsets.add(createItemset("C"),3);
+		expectedItemsets.add(createItemset("A","C"),3);
 		assertEquals(expectedItemsets, frequentItemsets);
 	}
 	
@@ -37,14 +40,14 @@ public class AprioriTest {
 		database.add(createItemset("A","D"));
 		database.add(createItemset("A","B","C"));
 		database.add(createItemset("A","C","D"));
-		Iterable<List<String>> frequentItemsets = new Apriori().mineFrequentItemSets(database, 2);
+		Multiset<List<String>> frequentItemsets = new Apriori().mineFrequentItemSets(database, 2);
 		
-		List<List<String>> expectedItemsets = new ArrayList<>();
-		expectedItemsets.add(createItemset("A"));
-		expectedItemsets.add(createItemset("C"));
-		expectedItemsets.add(createItemset("D"));
-		expectedItemsets.add(createItemset("A","C"));
-		expectedItemsets.add(createItemset("A","D"));
+		Multiset<List<String>> expectedItemsets = LinkedHashMultiset.create();
+		expectedItemsets.add(createItemset("A"),4);
+		expectedItemsets.add(createItemset("C"),3);
+		expectedItemsets.add(createItemset("D"),2);
+		expectedItemsets.add(createItemset("A","C"),3);
+		expectedItemsets.add(createItemset("A","D"),2);
 		assertEquals(expectedItemsets, frequentItemsets);
 	}
 	
@@ -54,16 +57,16 @@ public class AprioriTest {
 		database.add(createItemset("A","B","C","D","E"));
 		database.add(createItemset("B","C","D","E","F"));
 		database.add(createItemset("C","D","E","F","G"));
-		Iterable<List<String>> frequentItemsets = new Apriori().mineFrequentItemSets(database, 3);
+		Multiset<List<String>> frequentItemsets = new Apriori().mineFrequentItemSets(database, 3);
 		
-		List<List<String>> expectedItemsets = new ArrayList<>();
-		expectedItemsets.add(createItemset("C"));
-		expectedItemsets.add(createItemset("D"));
-		expectedItemsets.add(createItemset("E"));
-		expectedItemsets.add(createItemset("C","D"));
-		expectedItemsets.add(createItemset("C","E"));
-		expectedItemsets.add(createItemset("D","E"));
-		expectedItemsets.add(createItemset("C","D","E"));
+		Multiset<List<String>> expectedItemsets = LinkedHashMultiset.create();
+		expectedItemsets.add(createItemset("C"),3);
+		expectedItemsets.add(createItemset("D"),3);
+		expectedItemsets.add(createItemset("E"),3);
+		expectedItemsets.add(createItemset("C","D"),3);
+		expectedItemsets.add(createItemset("C","E"),3);
+		expectedItemsets.add(createItemset("D","E"),3);
+		expectedItemsets.add(createItemset("C","D","E"),3);
 		assertEquals(expectedItemsets, frequentItemsets);
 	}
 	
@@ -122,6 +125,15 @@ public class AprioriTest {
 		assertEquals(expectedCombinations, combinations);
 	}
 
+	@Test
+	public void testInduceRules() {
+		List<List<String>> database = new ArrayList<>();
+		database.add(createItemset("A","C"));
+		database.add(createItemset("A","B","C","D"));
+		database.add(createItemset("A","C","D"));
+		new Apriori().induceRules(database, 3, 2);
+	}
+	
 	private <E> List<E> createItemset(E ... items) {
 		List<E> itemset = new ArrayList<>();
 		for (E item : items)

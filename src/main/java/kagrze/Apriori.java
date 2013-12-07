@@ -3,7 +3,7 @@ package kagrze;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.google.common.collect.HashMultiset;
+import com.google.common.collect.LinkedHashMultiset;
 import com.google.common.collect.Multiset;
 import com.google.common.collect.SortedMultiset;
 import com.google.common.collect.TreeMultiset;
@@ -17,38 +17,53 @@ import com.google.common.collect.TreeMultiset;
 public class Apriori {
 
 	/**
-	 * It is assumed that items within a transaction are sorted in lexicographic order.
-	 * @param transactions
+	 * @param transactions It is assumed that items within a transaction are sorted in lexicographic order.
 	 * @param support
 	 * @return
 	 */
-	public <E extends Comparable> List<List<E>> mineFrequentItemSets(List<List<E>> transactions, int support) {
-		List<List<E>> frequentItemsets = genFrequent1Itemsets(transactions, support);
+	public <E extends Comparable> Multiset<List<E>> mineFrequentItemSets(List<List<E>> transactions, int support/*does support should be floating point?*/) {
+		Multiset<List<E>> frequentItemsets = genFrequent1Itemsets(transactions, support);
 
-		List<List<E>> candidatesForFrequentKItemsets = aprioriGen(frequentItemsets);
+		List<List<E>> candidatesForFrequentKItemsets = aprioriGen(new ArrayList<>(frequentItemsets.elementSet()));
 
 		for(int size=2; candidatesForFrequentKItemsets.size() > 0; size++) {
 			Multiset<List<E>> allKItemsets = getAllKItemsets(transactions, candidatesForFrequentKItemsets, size);
-			List<List<E>> frequentKItemsets = getFrequentKItemsets(allKItemsets, support);
+			Multiset<List<E>> frequentKItemsets = getFrequentKItemsets(allKItemsets, support);
 			frequentItemsets.addAll(frequentKItemsets);
-			candidatesForFrequentKItemsets = aprioriGen(frequentKItemsets);
+			candidatesForFrequentKItemsets = aprioriGen(new ArrayList<>(frequentKItemsets.elementSet()));
 		}
 		
 		return frequentItemsets;
 	}
+	
+	/**
+	 * 
+	 * @param transactions
+	 * @param support
+	 * @param confidence
+	 */
+	public <E extends Comparable> List<E> induceRules(List<List<E>> transactions, int support, float minConfidence) {
+		Multiset<List<E>> frequentItemsets = mineFrequentItemSets(transactions, support);
+		return genRules(frequentItemsets.iterator().next(),-1,null,-1,minConfidence);
+	}
 
-	private <E extends Comparable> List<List<E>> genFrequent1Itemsets(List<List<E>> transactions, int support) {
+	<E> List<E> genRules(List<E> lk, int lkSupport, List<E> am, int amSupport, float minConfidence) {
+//		float confidence = 
+		return null;
+	}
+	
+	private <E extends Comparable> Multiset<List<E>> genFrequent1Itemsets(List<List<E>> transactions, int support) {
 		SortedMultiset<E> all1Itemsets = TreeMultiset.create();
 		for (List<E> transaction : transactions)
 			for (E item : transaction)
 				all1Itemsets.add(item);
-		List<List<E>> frequent1Itemsets = new ArrayList<>();
+		Multiset<List<E>> frequent1Itemsets = LinkedHashMultiset.create();
 		for (E item : all1Itemsets.elementSet()) {
 			int count = all1Itemsets.count(item);
 			if(count >= support) {
 				List<E> itemset = new ArrayList<>();
 				itemset.add(item);
-				frequent1Itemsets.add(itemset);
+				frequent1Itemsets.add(itemset,count);
 			}
 		}
 		return frequent1Itemsets;
@@ -56,7 +71,7 @@ public class Apriori {
 
 	private <E> Multiset<List<E>> getAllKItemsets(
 			List<List<E>> transactions, List<List<E>> candidatesForFrequentKItemsets, int size) {
-		Multiset<List<E>> allKItemsets = HashMultiset.create();
+		Multiset<List<E>> allKItemsets = LinkedHashMultiset.create();
 		for (List<E> transaction : transactions) {
 			List<List<E>> combinations = generateAllCombinationsWithoutRepetitions(transaction, size);
 			for (List<E> candidateForFrequentKItemset : candidatesForFrequentKItemsets) {
@@ -71,19 +86,19 @@ public class Apriori {
 		return allKItemsets;
 	}
 
-	private <E> List<List<E>> getFrequentKItemsets( Multiset<List<E>> allKItemsets, int support) {
-		List<List<E>> frequentKItemsets = new ArrayList<>();
+	private <E> Multiset<List<E>> getFrequentKItemsets( Multiset<List<E>> allKItemsets, int support) {
+		Multiset<List<E>> frequentKItemsets = LinkedHashMultiset.create();
 		for (List<E> itemset : allKItemsets.elementSet()) {
 			int count = allKItemsets.count(itemset);
 			if (count >= support)
-				frequentKItemsets.add(itemset);
+				frequentKItemsets.add(itemset,count);
 		}
 		return frequentKItemsets;
 	}
 	
 	/**
 	 * This function contains two steps: join step and prune step
-	 * @param frequent1Itemsets
+	 * @param frequentItemsets Items within frequent K-1 itemsets have to be lexicographically ordered!
 	 * @return
 	 */
 	<E> List<List<E>> aprioriGen(List<List<E>> frequentItemsets) {
